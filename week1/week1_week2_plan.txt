@@ -13,12 +13,16 @@ ISSUE 1 (Most Important)
 -------------------------
 Brief description: [What's the problem? 1 sentence]
 Some body_mass_mg are negative, which is biologically impossible.
+
 Which tutorial provides the solution: [Tutorial name/number]
 Tutorial 7 - 7.0.7 Cross-variable checks: Biological impossibilities
+
 Which variable(s) affected: [Variable name(s)]
 body_mass_mg
+
 Why this is important to fix: [Biological/analytical reason]
 Negative mass effect statistical analysis.
+
 What I plan to do: [The technique I'll use, in plain English]
 Identify negative values and convert them to NA or investigate whether they are data entry errors
 
@@ -27,12 +31,16 @@ ISSUE 2 (Second Most Important)
 --------------------------------
 Brief description: [What's the problem? 1 sentence]
 Treatment has inconsistent capital letters
+
 Which tutorial provides the solution: [Tutorial name/number]
 Tutorial 1 - checking strings
+
 Which variable(s) affected: [Variable name(s)]
 Treatment
+
 Why this is important to fix: [Biological/analytical reason]
 Inconsistent labels may cause errors.
+
 What I plan to do: [The technique I'll use, in plain English]
 tandardize treatment names using string formatting (e.g. converting to lowercase).
 
