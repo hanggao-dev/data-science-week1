@@ -1,0 +1,114 @@
+**Dates**
+
+Dates in datasets can be messy due to inconsistent formats (e.g. “13-10-2019” vs “10-13-2019”). R doesn’t automatically know how to interpret these, and treating dates as numeric values doesn’t work properly for calculations. The lubridate package provides functions like ymd(), mdy(), and dmy() to convert strings into properly formatted date objects, based on the order of year, month, and day. Using the right parser prevents errors and ensures dates are handled correctly in time-based analysis.
+
+```{r}
+## Working with dates
+
+# Load the lubridate package
+library(lubridate)
+
+# Convert strings to dates based on their format
+ymd("2019-10-13")  # year-month-day
+dmy("13-10-2019")  # day-month-year
+mdy("10-13-2019")  # month-day-year
+ydm("2019-13-10")  # year-day-month
+
+# If some dates can’t be parsed, R will give a warning
+# This usually means the date format is inconsistent or invalid
+```
+BIG WARNING
+
+If R can’t parse the date (like someone wrote “Octember 37th, 3022”),
+you’ll get a warning. That means the data entry was a mess.
+
+Reformat
+The lubridate package can convert many common date formats using functions like ymd() or mdy(). However, if your date strings are formatted unusually or contain extra characters (like “X2020.01.22”), R won’t be able to parse them automatically. In such cases, you can use as_date() with a format argument to explicitly define the structure of the date, using placeholders like %Y (year), %m (month), and %d (day) to match the layout of your string.
+
+```{r}
+## Reformatting dates with lubridate
+
+library(lubridate)
+
+# Standard formats – these are parsed easily:
+ymd("2017-10-11")
+dmy("11 October 2020")
+mdy("10/11/2020")
+
+# Weird format – won't parse without format specified
+df <- tibble(
+  date = c("X2020.01.22", "X2020.01.22", "X2020.01.22", "X2020.01.22")
+)
+
+# This fails:
+df |> 
+  mutate(date = as_date(date))  # Returns NA + warning
+
+# This works (using custom format string):
+df |> 
+  mutate(date = as_date(date, format = "X%Y.%m.%d"))
+```
+
+**Extract**
+The lubridate package provides functions to extract specific components from a date-time string. This is useful when you want to summarize, group, or filter data by year, month, week, or day. For example, year("2017-11-28") returns 2017, and month() returns 11. This allows for flexible time-based analysis without manually splitting or reformatting strings.
+
+```{r}
+## Extracting date components
+
+library(lubridate)
+
+# Example date-time string
+date <- "2017-11-28T14:02:00"
+
+# Extract year
+year(date)   # 2017
+
+# Extract month
+month(date)  # 11
+
+# Extract week number (ISO 8601)
+week(date)   # 48
+
+# Extract day
+day(date)    # 28
+```
+
+**Excel date formats**
+Excel stores dates as numeric values representing the number of days since 1899-12-30. When these values are imported into R, they may appear as serial numbers instead of readable dates. To fix this, use janitor::excel_numeric_to_date() for Excel-style numbers. If dates are stored as strings (like “13-01-2010”), convert them to proper date format using the appropriate lubridate parser such as dmy(), depending on the format. Once cleaned, date columns can be used for calculations, filtering, or extracting time components.
+
+```{r}
+## Handling Excel date formats
+
+# Excel serial numbers (e.g., 42370) can be converted to dates like this:
+library(janitor)
+excel_numeric_to_date(42370)  # "2016-01-01"
+
+# If the date is stored as text in day-month-year format (like "13-01-2010"):
+library(lubridate)
+
+penguins_clean_names <- penguins_clean_names |> 
+  mutate(date_egg = dmy(date_egg))  # Converts character to Date
+```
+
+**Calculation with dates and filter with dates**
+Once date variables have been converted to proper date objects, you can perform a wide range of operations. You can calculate minimum or maximum dates using min() and max(), extract components like the year using lubridate::year(), or create new columns from dates. You can also filter datasets based on specific dates or date ranges using logical comparisons (e.g., >= ymd("2008-01-01")) to include or exclude records based on their date.
+
+```{r}
+## Calculations with dates
+
+# Get earliest and latest dates in the dataset
+penguins_clean_names |> 
+  summarise(
+    min_date = min(date_egg),
+    max_date = max(date_egg)
+  )
+
+# Create a new column with just the year
+penguins_clean_names <- penguins_clean_names |> 
+  mutate(year = lubridate::year(date_egg))
+
+# Filter records from 2008 onwards
+penguins_clean_names |> 
+  filter(date_egg >= ymd("2008-01-01"))
+```
+

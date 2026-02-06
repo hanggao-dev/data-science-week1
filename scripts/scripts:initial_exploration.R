@@ -42,3 +42,5 @@ mosquito_egg_raw |>
 #   Collector is missing
 # - Any obvious problems?
 # - Collector is missing
+
+next go over the tutorial think about it and then pick 2 chapter that you owuld use to apply into your own dataset. that is what you need to do before next lesson.

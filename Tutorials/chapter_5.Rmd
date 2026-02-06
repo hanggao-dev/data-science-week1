@@ -1,0 +1,102 @@
+**Missing data**
+
+```{r}
+library(tidyverse)
+penguins_clean_names |> 
+  group_by(species) |> 
+  summarise(mean = mean(body_mass_g))
+```
+
+When using mean() in R, the default behavior is to return NA if there are any missing values in the column. This is why some species return NA in the summary — R encounters at least one missing body_mass_g value and halts the calculation. To avoid this, we need to explicitly tell R to ignore missing values using na.rm = TRUE, which removes NAs before performing the calculation.
+
+```{r}
+## Calculating group-wise means with missing data
+
+# Load tidyverse
+library(tidyverse)
+
+# Attempt to calculate mean body mass by species
+penguins_clean_names |> 
+  group_by(species) |> 
+  summarise(mean = mean(body_mass_g))
+
+# Some species return NA because mean() includes missing values by default.
+# To fix this, we must tell R to remove NAs:
+penguins_clean_names |> 
+  group_by(species) |> 
+  summarise(mean = mean(body_mass_g, na.rm = TRUE))
+```
+
+**Why checking missing data patterns**
+Checking for missing data patterns helps uncover whether data is missing randomly or due to specific causes such as equipment issues, group differences, or procedural errors. Recognizing patterns in missingness allows you to make better decisions during analysis — for example, whether it’s safe to remove missing values or whether they should be imputed based on observed variables. This depends on the missingness mechanism, which can be classified as:
+	•	MCAR (Missing Completely At Random): No pattern; safe to ignore/remove
+	•	MAR (Missing At Random): Missingness depends on other observed variables
+	•	MNAR (Missing Not At Random): Missingness depends on the missing value itself (most problematic)
+
+Understanding the mechanism helps determine the appropriate statistical approach.
+
+*Finding Missing values
+There are several ways to detect missing values in a dataset, each offering different levels of detail and insight. Basic functions like summary() and skim() provide quick overviews of missing values per column, while visual tools like vis_miss() and gg_miss_upset() (from the naniar package) help explore missingness patterns visually. These tools are essential for understanding how much data is missing, where it’s missing, and whether certain variables tend to be missing together — all of which influence how you handle missing data in analysis.
+
+```{r}
+## Finding Missing Values
+
+# Basic numeric summary of missing values per column
+summary(penguins_clean_names)
+
+# More detailed summary including % missing
+library(skimr)
+skim(penguins_clean_names)
+
+# Visualise missing values as a heatmap
+library(naniar)
+vis_miss(penguins_clean_names)
+
+# Visualise overlap of missing values across multiple variables
+gg_miss_upset(penguins_clean_names)
+```
+
+You can extract rows with missing values using filter(if_any(..., is.na)). To return all rows that have at least one missing value in any column, use everything() inside if_any(). To target just one column, specify it directly inside if_any(). Reordering columns with select() can help bring important variables with missing data to the front, making it easier to inspect and interpret.
+
+```{r}
+## Extracting rows with missing values
+
+# Find rows where any column is NA, and reorder columns for easy viewing
+penguins_clean_names |> 
+  filter(if_any(everything(), is.na)) |> 
+  select(
+    culmen_length_mm, culmen_depth_mm, flipper_length_mm, 
+    sex, delta_15_n_o_oo, delta_13_c_o_oo, comments,
+    everything()
+  )
+
+# Find rows where a specific column is NA
+penguins_clean_names |> 
+  filter(if_any(culmen_length_mm, is.na))
+```
+**Remove missing values**
+
+There are three common strategies for handling missing values. First, you can use drop_na() to remove all rows that contain any NA, which is simple but risks losing a lot of data. Second, you can apply drop_na() to specific columns only, which is less destructive but still permanently removes rows. Finally, a safer option is using na.rm = TRUE inside summary functions like mean(), which ignores missing values during calculations without deleting any rows. This keeps your data intact while still allowing for analysis.
+
+```{r}
+## Removing missing values
+
+# 1. Drop all rows with any NA (most destructive)
+penguins_clean_names |> 
+  drop_na()
+
+# 2. Drop rows with NA in a specific column (less destructive)
+penguins_clean_names |> 
+  drop_na(body_mass_g)
+
+# 3. Keep rows but remove NAs only during calculation
+penguins_clean_names |> 
+  group_by(species) |> 
+  summarise(mean_body_mass = mean(body_mass_g, na.rm = TRUE))
+```
+
+**5.4 Summary**
+
+This chapter showed ways to find and remove different types of missing records from your dataset. It’s important to note that there might not be a single cleaned dataset without any missing values. You might find that in the same workflow, you will clean your dataset in multiple ways to preserve rows that are missing some, but not all, information. For example, some records may have complete taxonomic identification but lack spatial coordinates, while others have spatial coordinates but lack taxonomic information. Depending on the type of analysis you intend to perform, you may need to adjust your data cleaning approach accordingly.
+
+For a more comprehensive resource about missing values, including how to clean, visually represent, and impute them, check out The Missing Book.

@@ -1,0 +1,84 @@
+penguins_clean_names <- readRDS(url("https://github.com/UEABIO/5023B/raw/refs/heads/2026/files/penguins.RDS"))
+
+**Duplicates**
+Duplicates are rows in a dataset that appear more than once, either completely identical across all columns (full duplicates) or sharing the same values in key columns (partial duplicates). Full duplicates can be found using duplicated(across(everything())), which checks if any row is an exact copy of a previous one. For more subtle cases, get_dupes() from the janitor package identifies rows with repeated values in selected columns, helping detect input errors like accidental copy-pastes or typos. Removing duplicates is essential to avoid skewing your analysis with repeated data points.
+
+```{r}
+## Duplicates
+
+# Load libraries
+library(tidyverse)
+library(janitor)
+
+# Check for fully duplicated rows (every column identical)
+penguins_clean_names |> 
+  filter(duplicated(across(everything()))) |> 
+  sum()
+
+# Output: 0
+# This means there are no fully duplicated rows in the dataset.
+
+# Check for partially duplicated rows based on shared column values
+penguins_clean_names |> 
+  get_dupes()
+
+# Output: an empty tibble (if no dupes found)
+# This checks for rows that are duplicated in selected columns, even if not identical across all columns.
+```
+Note:
+duplicated(across(everything())) checks for exact full-row duplicates and only flags the second occurrence onward. You can’t choose columns.
+
+get_dupes(col1, col2) (from janitor) checks for repeated values in selected columns and returns all matching rows, including the first.
+
+Use duplicated() for exact row copies.
+Use get_dupes() to find repeated identities based on specific columns.
+
+**Adding duplicates**
+```{r}
+penguins_demo <- penguins_clean_names |> 
+  slice(1:50) |>  # Take the first 50 rows
+  bind_rows(slice(penguins_clean_names, c(1,5,10,15,30)))  # Then ADD 5 duplicate rows
+
+penguins_demo |> 
+  filter(duplicated(across(everything())))
+
+penguins_demo |> 
+  get_dupes()
+```
+**Remove duplicates
+```{r}
+# Option 1: filter out duplicated rows
+penguins_demo |> 
+  filter(!duplicated(across(everything())))
+```
+This keeps only the first occurrence of each row and tosses all the repeats.
+
+```{r}
+# Option 2: distinct() does the same thing automatically
+penguins_demo |> 
+  distinct()
+```
+distinct() is a shortcut that removes full-row duplicates by default.
+
+**Counting unique entries**
+To understand how many entries are in your dataset versus how many unique individuals there are, you can use:
+	•	n() to count total rows
+	•	n_distinct(column) to count the number of distinct values in a specific column
+
+This is useful for spotting repeated observations or tracking how many unique units (like individuals or IDs) exist in the dataset.
+
+In this case, there are 344 rows, but only 190 unique individual IDs, meaning some penguins appear more than once.
+```{r}
+## Counting total vs unique entries
+
+penguins_clean_names |> 
+  summarise(
+    n = n(),  # Total number of rows (entries)
+    n_distinct_id = n_distinct(individual_id)  # Number of unique penguins
+  )
+
+# Output:
+# n    n_distinct_id
+# 344  190
+```
+

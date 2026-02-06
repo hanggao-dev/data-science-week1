@@ -1,0 +1,152 @@
+penguins_clean_names <- readRDS(url("https://github.com/UEABIO/5023B/raw/refs/heads/2026/files/penguins.RDS"))
+
+3. Strings
+Learning outcomes
+-Use stringr functions to tidy and manipulate text data.
+-Detect and fix inconsistencies in categorical variables.
+-Apply conditional replacements with case_when() and if_else().
+-Split, join, and clean up messy strings efficiently.
+-Understand when and how to use regex patterns for flexible text matching.
+
+A string just means text, like names or sentences in your data. But sometimes the text is messy, like random capital letters, weird spaces, spelling mistakes, or symbols. This mess can mess up your analysis. In this chapter, you learn how to clean that text using the stringr package, fix spelling and formatting problems, and make everything consistent. You’ll also learn how to tell R what to change using case_when() or if_else(), and how to break or join text if needed. There’s also a thing called regex, which helps you find patterns in text more easily.
+
+3.3 **Basic string manipulation**
+The stringr package is used to clean and fix text in your dataset. One common fix is removing unwanted spaces at the beginning or end of a word using str_trim(). This helps make text data more consistent and easier to work with. You can trim both sides by default, or just the left or right side if you choose.
+
+Trim
+```{r}
+str_trim("  penguin  ")               # trims both → "penguin"
+str_trim("  penguin  ", side = "left") # trims just the left → "penguin  "
+```
+str_trim(): just cut the space off that's it, side is used 
+
+Squish
+str_squish() removes any extra spaces at the beginning, end, and between words. It keeps only one space between each word to help tidy up messy text.
+```{r}
+str_squish("  Hang    Gao   ")  
+# "Hang Gao"
+```
+
+Truncate
+str_trunc() shortens a long string to a fixed length. It cuts the text and adds “…” at the end to show that it has been shortened.
+```{r}
+str_trunc("Hang Gao the Code Emperor", width = 15)  
+# "Hang Gao the ..."
+```
+
+Split
+str_split() splits a string into smaller pieces based on a character you choose, like a space or underscore. It returns a list of parts.
+```{r}
+str_split("Hang_Gao_is_slay", "_")  
+# [[1]] [1] "Hang" "Gao" "is" "slay"
+```
+
+Concatenate
+str_c() joins several pieces of text together into one string. You can add a separator between them if needed.
+```{r}
+str_c("Hang", "Gao", sep = "_")  
+# "Hang_Gao"
+```
+
+**Cleaning strings with dplyr**
+distinct()
+
+Sometimes we want to check for typos or weird entries in a column, especially for things like categories (e.g., “Male”, “Female”). We can do this by asking R to show us only the unique values in that column.
+
+For example, if a column is supposed to only have “MALE” and “FEMALE”, but someone typed “FMALE” by accident, using distinct() would make that mistake stand out.
+
+We use the distinct() function from dplyr on the column we want to check.
+```{r}
+penguins_clean_names |>  
+  distinct(sex)
+```
+This will print each unique value found in the sex column. You can use it on any column you want to clean or check for errors.
+
+**Conditional Changes with case_when() and if_else()**
+**case_when()**
+Use case_when() when you want to apply multiple conditions to change values in a column. It works like a series of “if…then” checks, with a .default to catch anything else.
+
+```{r}
+penguins_clean_names |>
+  mutate(species = case_when(
+    species == "Adelie Penguin (Pygoscelis adeliae)" ~ "Adelie",
+    species == "Gentoo penguin (Pygoscelis papua)" ~ "Gentoo",
+    species == "Chinstrap penguin (Pygoscelis antarctica)" ~ "Chinstrap",
+    .default = as.character(species)
+  ))
+```
+
+**if_else()**
+if_else() checks a condition and returns a value depending on whether it’s TRUE or FALSE.
+
+It needs:
+	1.	A logical test (e.g. species == "Adelie")
+	2.	A value if the test is TRUE
+	3.	A value if the test is FALSE
+
+```{r}
+penguins |> 
+  mutate(flip = if_else(species == "Adelie", "Yessir", "Nope"))
+```
+
+if_else() is strict. If the TRUE and FALSE outputs aren’t the same type (like mixing character and numeric), it will error. It also doesn’t like unexpected NAs.
+
+**Rename text values with stringr**
+We can clean and simplify string values using the stringr package.
+stringr::word(string, 1) picks just the first word (e.g., “Adelie” from “Adelie Penguin…”)
+stringr::str_to_title(string) converts “MALE” → “Male”, “female” → “Female” (first letter uppercase).
+```{r}
+penguins_clean_names |>
+  mutate(species = stringr::word(species, 1)) |> 
+  mutate(sex = stringr::str_to_title(sex))
+```
+This edits the species column to just show the first word and makes sure the sex column has proper capitalization.
+
+
+**Split columns**
+To split one column into two, we can use separate() from tidyr.
+This is useful when you want to extract part of a string (e.g., remove the Latin name from species column but keep it).
+We use a regular expression (?=\\() which means: split right before the opening bracket (.
+
+```{r}
+penguins_clean_names |> 
+  separate(
+    species,
+    into = c("species", "full_latin_name"),
+    sep = "(?=\\()"
+  )
+```
+
+This creates two columns: one with the common species name and one with the Latin name.
+
+**Matching**
+str_detect() checks whether a specific pattern (like a word) exists in a string. It returns TRUE or FALSE.
+You can use it with filter() to only keep the rows where that pattern is found.
+```{r}
+str_detect("Genus specificus", "Genus")
+# TRUE
+
+penguins_clean_names |> 
+  filter(str_detect(species, "papua")) |> 
+  select(species)
+```
+
+**Remove a pattern**
+str_remove() removes the first match of a pattern.
+str_remove_all() removes every match of the pattern in a string.
+
+You can use them to strip unwanted characters like brackets or whitespace.
+
+```{r}
+str_remove("Genus specificus", pattern = "Genus ")
+# "specificus"
+
+penguins_clean_names |> 
+  separate(
+    species,
+    into = c("species", "full_latin_name"),
+    sep = "(?=\\()"
+  ) |> 
+  mutate(full_latin_name = str_remove_all(full_latin_name, "[\\(\\)]"))
+```
+
